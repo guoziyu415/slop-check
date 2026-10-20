@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Slop Check · find the AI habits in your writing · Code415</title>
+<meta name="description" content="Paste a post, email or essay and see the chatbot habits light up: pet words, stock phrases, em dashes, It's not X, it's Y. English and Japanese. Runs in your browser, nothing is sent.">
+<link rel="canonical" href="https://code415.dev/demos/2026-10-20/slop-check">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Slop Check: find the AI habits in your writing">
+<meta property="og:description" content="Pet words, stock phrases, em dashes and chatbot leftovers, highlighted in your browser. English and 日本語. Free and open source.">
+<meta property="og:url" content="https://code415.dev/demos/2026-10-20/slop-check">
+<meta property="og:image" content="https://code415.dev/demos/2026-10-20/slop-check/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@Code415zg">
+<meta name="theme-color" content="#07070f">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070f; --bg2:#0d0d1a; --card:#11111f; --card2:#161628; --line:#262640; --ink:#ecebff; --ink2:#a9a8c8; --ink3:#6f6e92;
+  --pink:#ff4fa3; --amber:#ffb02e; --cyan:#3ee6ff; --violet:#8b7bff; --red:#ff5f5f; --mint:#4dffa6;
+  --sans:"IBM Plex Sans","Zen Kaku Gothic New","Hiragino Sans","Noto Sans CJK JP",system-ui,sans-serif;
+  --jp:"Zen Kaku Gothic New","IBM Plex Sans","Hiragino Sans","Noto Sans CJK JP",system-ui,sans-serif;
+  --head:"Space Grotesk","Zen Kaku Gothic New",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 var(--sans);overflow-x:hidden}
+html[lang=ja] body{font-family:var(--jp);font-feature-settings:"palt"}
+html[lang=ja] h1,html[lang=ja] h2{letter-spacing:0}
+a{color:var(--cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+.bgfx{position:fixed;inset:0;pointer-events:none;z-index:0;background:
+  radial-gradient(900px 500px at 12% -10%,rgba(139,123,255,.18),transparent 60%),
+  radial-gradient(800px 500px at 100% 0%,rgba(255,79,163,.12),transparent 60%),
+  radial-gradient(700px 600px at 50% 120%,rgba(62,230,255,.08),transparent 60%)}
+.grid{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(#000,transparent 70%)}
+.wrap{position:relative;z-index:1;max-width:1240px;margin:0 auto;padding:18px 24px 60px}
+header.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:14px;color:var(--ink2)}
+header.top .brand{font-family:var(--mono);font-weight:700;color:var(--ink);letter-spacing:.02em}
+header.top .brand b{color:var(--pink)}
+header.top .sp{flex:1}
+.langs{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.langs button{background:none;border:0;color:var(--ink2);font:500 13px var(--sans);padding:6px 12px;cursor:pointer}
+.langs button.on{background:var(--card2);color:var(--ink)}
+.hero{margin:26px 0 18px}
+h1{font:700 clamp(34px,5.4vw,64px)/1.02 var(--head);margin:0;letter-spacing:-.02em}
+h1 .glow{background:linear-gradient(90deg,var(--pink),var(--violet) 55%,var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 0 22px rgba(255,79,163,.35))}
+.sub{color:var(--ink2);font-size:clamp(16px,1.6vw,19px);margin:12px 0 0;max-width:820px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.badge{font:500 12.5px var(--sans);color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:rgba(17,17,31,.6)}
+.badge i{font-style:normal;color:var(--mint)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start}
+.card{background:linear-gradient(180deg,rgba(22,22,40,.92),rgba(13,13,26,.92));border:1px solid var(--line);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.edcard{padding:14px}
+.edbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.btn{font:600 13.5px var(--sans);color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.btn:hover{border-color:#3b3b62}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(90deg,#ff4fa3,#8b7bff);border-color:transparent;color:#fff;box-shadow:0 0 24px rgba(255,79,163,.35)}
+.btn.ghost{background:none}
+.btn[disabled]{opacity:.45;cursor:default}
+.edbar .sp{flex:1}
+.count{font:500 12.5px var(--mono);color:var(--ink3)}
+.ed{position:relative;border-radius:12px;background:#0a0a16;border:1px solid var(--line);height:430px;overflow:hidden}
+.ed:focus-within{border-color:#45457a;box-shadow:0 0 0 3px rgba(139,123,255,.15)}
+.ed .back,.ed textarea{position:absolute;inset:0;margin:0;padding:18px 20px;font:17px/1.75 var(--sans);letter-spacing:0;white-space:pre-wrap;overflow-wrap:break-word;word-break:normal;tab-size:4}
+html[lang=ja] .ed .back,html[lang=ja] .ed textarea{font-family:var(--sans)}
+.ed .back{color:transparent;overflow:hidden;pointer-events:none}
+.ed textarea{width:100%;height:100%;resize:none;border:0;outline:0;background:transparent;color:var(--ink);caret-color:var(--pink);overflow-y:auto}
+.ed textarea::placeholder{color:var(--ink3)}
+mark mark{box-shadow:inset 0 -3px 0 var(--mk),0 0 12px var(--mk)}
+mark{color:transparent;border-radius:4px;padding:0;background:var(--mk-bg);box-shadow:inset 0 -2px 0 var(--mk),0 0 14px var(--mk-glow);transition:background .25s,box-shadow .25s,opacity .3s}
+mark.c-punct{--mk:#ff4fa3;--mk-bg:rgba(255,79,163,.30);--mk-glow:rgba(255,79,163,.30)}
+mark.c-struct{--mk:#ffb02e;--mk-bg:rgba(255,176,46,.22);--mk-glow:rgba(255,176,46,.18)}
+mark.c-phrase{--mk:#3ee6ff;--mk-bg:rgba(62,230,255,.20);--mk-glow:rgba(62,230,255,.18)}
+mark.c-word{--mk:#8b7bff;--mk-bg:rgba(139,123,255,.30);--mk-glow:rgba(139,123,255,.25)}
+mark.c-bot{--mk:#ff5f5f;--mk-bg:rgba(255,95,95,.30);--mk-glow:rgba(255,95,95,.28)}
+mark.c-fmt{--mk:#4dffa6;--mk-bg:rgba(77,255,166,.18);--mk-glow:rgba(77,255,166,.15)}
+mark.pop{animation:pop .5s ease-out}
+mark.flash{animation:flash 1.1s ease-in-out 2}
+mark.out{opacity:0}
+@keyframes pop{0%{box-shadow:inset 0 -2px 0 var(--mk),0 0 0 6px var(--mk-glow);background:var(--mk)}100%{}}
+@keyframes flash{0%,100%{}50%{background:var(--mk);box-shadow:inset 0 -2px 0 var(--mk),0 0 28px var(--mk)}}
+.toast{position:absolute;left:50%;bottom:14px;transform:translate(-50%,10px);opacity:0;background:rgba(10,10,22,.92);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font:500 14px var(--sans);color:var(--ink);transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;font-size:13px;color:var(--ink2)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px;background:var(--c);box-shadow:0 0 8px var(--c)}
+.side{display:flex;flex-direction:column;gap:20px;position:sticky;top:14px}
+.scorecard{padding:20px 20px 16px}
+.gauge{display:flex;align-items:center;gap:18px}
+.ring{position:relative;width:150px;height:150px;flex:none}
+.ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.ring .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .num b{font:700 44px/1 var(--mono);letter-spacing:-.02em;text-shadow:0 0 22px currentColor}
+.ring .num small{font:500 11.5px var(--sans);color:var(--ink3);margin-top:6px}
+.bandbox .band{font:700 22px/1.15 var(--head);margin:0}
+.bandbox p{margin:6px 0 0;color:var(--ink2);font-size:13.5px;line-height:1.5}
+.scale{display:flex;margin-top:16px;height:8px;border-radius:99px;overflow:hidden;position:relative}
+.scale i{flex:1}
+.scale .mk{position:absolute;top:-4px;width:4px;height:16px;border-radius:2px;background:#fff;box-shadow:0 0 10px #fff;transition:left .4s}
+.scalelab{display:flex;justify-content:space-between;font:500 11px var(--mono);color:var(--ink3);margin-top:6px}
+.cats{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.cat{display:grid;grid-template-columns:132px 1fr 28px;gap:10px;align-items:center;font-size:13.5px;color:var(--ink2)}
+.cat .bar{height:8px;border-radius:99px;background:#1c1c32;overflow:hidden}
+.cat .bar i{display:block;height:100%;width:0;border-radius:99px;background:var(--c);box-shadow:0 0 12px var(--c);transition:width .45s}
+.cat .n{font:600 13px var(--mono);color:var(--ink);text-align:right}
+.found{padding:6px 0}
+.found h3{font:700 15px var(--head);margin:12px 18px 6px;color:var(--ink2);letter-spacing:.02em;text-transform:uppercase}
+.found ul{list-style:none;margin:0;padding:0;max-height:520px;overflow:auto}
+.found li{padding:10px 18px;border-top:1px solid #1d1d33;cursor:pointer}
+.found li:hover{background:rgba(255,255,255,.025)}
+.found .h{display:flex;align-items:center;gap:8px;font-weight:600}
+.found .h i{width:10px;height:10px;border-radius:3px;background:var(--c);box-shadow:0 0 8px var(--c);flex:none}
+.found .h em{font:600 12px var(--mono);font-style:normal;color:var(--ink3);margin-left:auto}
+.found .why{font-size:13.5px;color:var(--ink2);margin:3px 0 0 18px}
+.found .fx{font-size:13px;color:var(--mint);margin:2px 0 0 18px}
+.found .empty{padding:14px 18px;color:var(--ink3);font-size:14px}
+section.more{margin-top:44px;display:grid;grid-template-columns:1.1fr .9fr;gap:20px;align-items:start}
+section.more .card{padding:22px 24px}
+h2{font:700 24px/1.2 var(--head);margin:0 0 6px}
+.kicker{font:600 12px var(--mono);color:var(--pink);letter-spacing:.08em;text-transform:uppercase}
+.muted{color:var(--ink2)}
+.chart{margin:18px 0 6px;display:flex;flex-direction:column;gap:16px}
+.crow .lab{display:flex;justify-content:space-between;font-size:14px;color:var(--ink2);margin-bottom:6px}
+.crow .bars{display:flex;flex-direction:column;gap:6px}
+.cbar{display:grid;grid-template-columns:150px 1fr 56px;gap:10px;align-items:center;font-size:13px}
+.cbar .t{height:14px;background:#1a1a2e;border-radius:6px;overflow:hidden}
+.cbar .t i{display:block;height:100%;width:0;border-radius:6px;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.cbar .v{font:700 14px var(--mono);text-align:right}
+.facts{margin:14px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:14px;color:var(--ink2)}
+.facts b{color:var(--ink);font-family:var(--mono)}
+.warn{border-color:rgba(255,176,46,.35)!important}
+.warn h2{color:var(--amber)}
+.how ol{margin:10px 0 0;padding-left:20px;color:var(--ink2)}
+.how li{margin:6px 0}
+.src{margin-top:40px;font-size:13.5px;color:var(--ink3)}
+.src a{color:var(--ink2)}
+footer{margin-top:28px;padding-top:16px;border-top:1px solid #1d1d33;font-size:13.5px;color:var(--ink3);display:flex;gap:14px;flex-wrap:wrap}
+.cap{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:50;background:rgba(7,7,15,.88);border:1px solid #33335a;border-radius:16px;padding:14px 26px;font:700 34px/1.2 var(--head);color:#fff;text-shadow:0 0 18px rgba(255,79,163,.5);opacity:0;transition:opacity .35s;pointer-events:none;white-space:nowrap}
+.cap.on{opacity:1}
+body.rec .side{position:static}
+body.rec *,body.rec *::before{transition:none!important;animation:none!important}
+body.rec mark{filter:brightness(calc(1 + var(--pop,0) * 1.3));box-shadow:inset 0 -2px 0 var(--mk),0 0 calc(14px + var(--pop,0) * 26px) var(--mk-glow)}
+body.rec .ed{height:400px}
+@media (max-width:980px){
+  .main{grid-template-columns:1fr}
+  .side{position:static}
+  section.more{grid-template-columns:1fr}
+  .ed{height:360px}
+}
+@media (max-width:560px){
+  .wrap{padding:14px 16px 48px}
+  .ed .back,.ed textarea{font-size:16px;padding:14px 14px}
+  .ring{width:120px;height:120px}
+  .ring .num b{font-size:36px}
+  .cat{grid-template-columns:110px 1fr 24px}
+  .cbar{grid-template-columns:104px 1fr 48px}
+  .facts{grid-template-columns:1fr}
+  .edbar .count{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="bgfx"></div><div class="grid"></div>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="https://code415.dev/">CODE<b>415</b></a>
+    <a href="https://code415.dev/demos" data-t="demos">Demos</a>
+    <span class="sp"></span>
+    <a href="https://github.com/guoziyu415/slop-check" rel="noopener">GitHub</a>
+    <div class="langs" role="group" aria-label="Language"><button data-l="en">English</button><button data-l="ja">日本語</button></div>
+  </header>
+
+  <div class="hero">
+    <h1><span data-t="h1a">Slop</span> <span class="glow" data-t="h1b">Check</span></h1>
+    <p class="sub" data-t="sub">Paste a post, an email or an essay. The habits chatbots lean on light up: pet words, stock phrases, em dashes, It's not X, it's Y. English and 日本語.</p>
+    <div class="badges"><span class="badge"><i>●</i> <span data-t="b1">Runs in your browser, nothing is sent</span></span><span class="badge" id="npat">0 habits</span><span class="badge" data-t="b3">Free and open source</span></div>
+  </div>
+
+  <div class="main">
+    <div class="card edcard">
+      <div class="edbar">
+        <button class="btn" id="sBot" data-t="sBot">Chatbot sample</button>
+        <button class="btn" id="sPlain" data-t="sPlain">Plain sample</button>
+        <button class="btn" id="sJa" data-t="sJa">日本語の例</button>
+        <span class="sp"></span>
+        <button class="btn primary" id="fixBtn" data-t="fix">Swap the easy ones</button>
+      </div>
+      <div class="ed" id="ed">
+        <div class="back" id="back" aria-hidden="true"></div>
+        <textarea id="ta" spellcheck="false" placeholder="Paste your text here" data-tp="ph"></textarea>
+        <div class="toast" id="toast"></div>
+      </div>
+      <div class="edbar" style="margin:10px 0 0">
+        <span class="count" id="count"></span><span class="sp"></span>
+        <button class="btn ghost" id="undoBtn" data-t="undo" disabled>Undo</button>
+        <button class="btn ghost" id="copyBtn" data-t="copy">Copy text</button>
+        <button class="btn ghost" id="clearBtn" data-t="clear">Clear</button>
+      </div>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <div class="side">
+      <div class="card scorecard">
+        <div class="gauge">
+          <div class="ring">
+            <svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="52" fill="none" stroke="#1d1d33" stroke-width="10"/><circle id="arc" cx="60" cy="60" r="52" fill="none" stroke="#4dffa6" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7" style="filter:drop-shadow(0 0 6px currentColor)"/></svg>
+            <div class="num"><b id="score">0</b><small id="perlab">per 1,000 words</small></div>
+          </div>
+          <div class="bandbox"><p class="band" id="band">Reads human</p><p id="bandtxt"></p></div>
+        </div>
+        <div class="scale"><i style="background:#4dffa6"></i><i style="background:#ffd23e"></i><i style="background:#ff8a3d"></i><i style="background:#ff4f7a"></i><span class="mk" id="mk" style="left:0"></span></div>
+        <div class="scalelab"><span>0</span><span>15</span><span>40</span><span>80</span><span>120+</span></div>
+        <div class="cats" id="cats"></div>
+      </div>
+      <div class="card found">
+        <h3 data-t="found">What it found</h3>
+        <ul id="list"></ul>
+      </div>
+    </div>
+  </div>
+
+  <section class="more">
+    <div class="card">
+      <div class="kicker" data-t="k1">The news behind it</div>
+      <h2 data-t="d_h">A 2.5 GB model that unlearned the habits</h2>
+      <p class="muted" data-t="d_p">On October 19 Erik Markus Kannike shared qwen3-4b-deslop. A small LoRA on Qwen3-4B, trained for 1 to 3 hours on an M2 MacBook Air, plus a sign flip on four neurons, took most of the chatbot habits out of its writing. He scored 40 held out answers with his own list of habit patterns.</p>
+      <div class="chart" id="chart">
+        <div class="crow"><div class="lab"><span data-t="c1">Habit score per 1,000 words</span><span data-t="lower">lower is better</span></div><div class="bars">
+          <div class="cbar"><span>Qwen3-4B</span><div class="t"><i data-w="121" style="background:linear-gradient(90deg,#ff4fa3,#ff5f5f);box-shadow:0 0 14px rgba(255,79,163,.6)"></i></div><span class="v">121</span></div>
+          <div class="cbar"><span>deslop v4</span><div class="t"><i data-w="12.5" style="background:#4dffa6;box-shadow:0 0 14px rgba(77,255,166,.6)"></i></div><span class="v">12.5</span></div></div></div>
+        <div class="crow"><div class="lab"><span data-t="c2">Em dashes per 1,000 words</span><span></span></div><div class="bars">
+          <div class="cbar"><span>Qwen3-4B</span><div class="t"><i data-w="20.5" data-max="25" style="background:linear-gradient(90deg,#ff4fa3,#ff5f5f);box-shadow:0 0 14px rgba(255,79,163,.6)"></i></div><span class="v">20.5</span></div>
+          <div class="cbar"><span>deslop v4</span><div class="t"><i data-w="0" data-max="25" style="background:#4dffa6"></i></div><span class="v">0</span></div></div></div>
+      </div>
+      <ul class="facts">
+        <li data-t="f1"><b>30 of 30</b> quiz answers still right</li>
+        <li data-t="f2"><b>161</b> filtered answers to train on</li>
+        <li data-t="f3"><b>rank 16</b> LoRA, <b>175 bytes</b> of neuron edits</li>
+        <li data-t="f4"><b>2.5 GB</b>, runs in Ollama</li>
+      </ul>
+      <p class="muted" style="font-size:13.5px;margin:14px 0 0" data-t="d_note">His pattern list is not published, so his scores and the score on this page are not on the same scale. Same idea, our own list. Numbers from his write up.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:20px">
+      <div class="card how">
+        <div class="kicker" data-t="k2">How it works</div>
+        <h2 data-t="h_h">A list of habits, weighted</h2>
+        <ol id="howlist"></ol>
+      </div>
+      <div class="card warn">
+        <h2 data-t="w_h">A habit is not proof</h2>
+        <p class="muted" data-t="w_p" style="margin:6px 0 0">Plenty of people write like this, especially in school essays, business email and translated text, and good writers use an em dash on purpose. Please don't use this to accuse anyone of using AI. Use it on your own drafts.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="src" id="src"></div>
+  <footer>
+    <span>Code415 · Ziyu Guo</span>
+    <a href="https://code415.dev/d/2026-10-20#2026-10-20-03" data-t="radar">Found on Code415 Radar</a>
+    <a href="https://github.com/guoziyu415/slop-check" rel="noopener">github.com/guoziyu415/slop-check</a>
+    <a href="https://x.com/Code415zg" rel="noopener">@Code415zg</a>
+    <span>MIT License</span>
+  </footer>
+</div>
+<div class="cap" id="cap"></div>
+
+<script>
+/* Slop Check core. Finds common AI writing habits in English and Japanese text.
+   MIT License. https://github.com/guoziyu415/slop-check
+   A habit is not proof. People write like this too. */
+(function (root, factory) {
+  if (typeof module === "object" && module.exports) module.exports = factory();
+  else root.SlopCheck = factory();
+})(typeof self !== "undefined" ? self : this, function () {
+  "use strict";
+
+  var CATS = {
+    punct: { en: "Dashes", ja: "記号の癖", color: "#ff4fa3" },
+    struct: { en: "Sentence tricks", ja: "構文の癖", color: "#ffb02e" },
+    phrase: { en: "Stock phrases", ja: "定型句", color: "#3ee6ff" },
+    word: { en: "Pet words", ja: "AIがよく使う語", color: "#8b7bff" },
+    bot: { en: "Chatbot leftovers", ja: "チャットボットの名残", color: "#ff5f5f" },
+    fmt: { en: "Formatting", ja: "書式", color: "#4dffa6" }
+  };
+
+  // Each pattern: id, lang, cat, re (source), f (flags), w (weight), label, why, fix
+  var P = [];
+  function add(lang, cat, id, re, w, label, why, fix, flags) {
+    if (re instanceof RegExp) { flags = re.flags; re = re.source; }
+    P.push({ id: id, lang: lang, cat: cat, re: re, f: flags || "gi", w: w, label: label, why: why, fix: fix || "" });
+  }
+
+  /* ---------------- English ---------------- */
+  add("en", "punct", "emdash", "\\s?[\u2014]\\s?|\\s\u2013\\s|\\s--\\s", 3, "Em dash",
+    "Chatbots put an em dash where a comma or a period would do. One is fine. One every other sentence is a tell.",
+    "Use a comma or a period, or split the sentence.");
+
+  add("en", "struct", "notx_its", "\\b(?:(?:it|that|this|he|she|they|you|we)'?s\\s+not|(?:is|are|was|were)\\s+not|isn'?t|aren'?t|wasn'?t|weren'?t)\\s+(?:just\\s+|only\\s+|merely\\s+|simply\\s+|about\\s+)?[^.!?\\n]{1,60}?[,;.\u2014\u2013]\\s*(?:it'?s|it is|it was|they'?re|they are|this is|that'?s|but)\\b", 3, "It's not X, it's Y",
+    "The negative parallelism. It sets up a straw man just to knock it down, and models use it constantly.",
+    "Say the Y part directly.");
+  add("en", "struct", "notonly", "\\bnot (?:just|only|merely|simply) [^.!?\\n]{1,60}?,? but (?:also )?", 3, "Not only X but Y",
+    "Same trick in a longer form. It makes a plain point sound like a reveal.",
+    "Keep the stronger half.");
+  add("en", "struct", "nonojust", "\\bNo [^.!?\\n]{1,40}[.!]\\s+No [^.!?\\n]{1,40}[.!](?:\\s+(?:Just|Only) [^.!?\\n]{1,40}[.!])?", 3, "No X. No Y. Just Z.",
+    "Staccato ad copy. Very common in model written posts.",
+    "Write one normal sentence.", "g");
+  add("en", "struct", "rhetq", "\\b(?:The (?:result|answer|catch|kicker|best part|truth|secret|twist|problem|goal|difference|reason|takeaway|verdict|outcome)|What happened next|Why does (?:this|it|that) matter|Sound familiar|The good news|The bad news)\\?", 2, "Question, then the answer",
+    "A short question that the next sentence answers. It fakes suspense.",
+    "Just state the answer.", "g");
+  add("en", "struct", "whether", "\\bwhether you(?:'re| are) (?:a |an )?[^,.!?\\n]{1,40} or (?:a |an |just )?[^,.!?\\n]{1,40}", 2, "Whether you're X or Y",
+    "Tries to address every reader at once. Nobody talks like this.",
+    "Pick the reader you actually mean.");
+  add("en", "struct", "fromto", "(?:^|(?<=[.!?]\\s))From [^,.!?\\n]{2,40} to [^,.!?\\n]{2,40},", 2, "From X to Y",
+    "A false range between two loosely related things, used to sound sweeping.",
+    "Name the one thing you mean.", "g");
+  add("en", "struct", "xnoty", "\\b(?:is|are|was|feels?|becomes?) (?:a |an |the )?[A-Za-z][^,.!?\\n]{1,30}, not (?:a |an |the )?[^,.!?\\n]{2,30}[.!]", 2, "X, not Y",
+    "A slogan shaped sentence like a journey, not a destination.",
+    "Say the one thing you mean.");
+  add("en", "struct", "three", "\\b[A-Za-z]{3,}, [A-Za-z]{3,},? and [A-Za-z]{3,}\\b", 0.5, "List of three",
+    "Models love groups of three. One list means nothing. Every list being three is the tell.",
+    "Use two, or four, or the one that matters.");
+
+  var enPhrases = [
+    ["important_note", "it(?:'s| is) (?:important|crucial|essential|worth) (?:to )?(?:note|noting|remember|mention|mentioning|keep in mind)(?: that)?", 2, "It's worth noting", "Filler that announces a point instead of making it.", "Delete it and keep the point."],
+    ["todays_world", "in today'?s (?:fast[- ]paced|digital|modern|ever[- ]changing|rapidly evolving|interconnected) (?:world|age|landscape|era)", 2, "In today's fast paced world", "A stock opener that says nothing.", "Start with the actual point."],
+    ["ever_evolving", "ever[- ](?:evolving|changing|growing)", 2, "Ever evolving", "Vague motion words that make anything sound important.", "Say what changed."],
+    ["plays_role", "plays? an? (?:crucial|vital|pivotal|key|important|significant|central) role", 2, "Plays a crucial role", "Inflated way to say something matters.", "Say how it matters."],
+    ["testament", "(?:is|stands as|serves as) a (?:true |powerful )?testament to", 2, "A testament to", "Grand phrase models reach for.", "Say it shows."],
+    ["tapestry", "(?:rich|vibrant|intricate|complex) tapestry", 2, "Rich tapestry", "Classic model flourish.", "Say mix or range, or cut it."],
+    ["navigate", "navigat(?:e|ing) the (?:complexities|challenges|intricacies|landscape|world)", 2, "Navigate the complexities", "Abstract travel metaphor.", "Say handle or deal with."],
+    ["realm", "in the (?:realm|world|landscape) of", 2, "In the realm of", "Padding before the noun.", "Just say in."],
+    ["unlock", "unlock(?:ing)? (?:the|its|your) (?:full |true )?potential", 2, "Unlock the potential", "Ad copy.", "Say what it lets you do."],
+    ["nextlevel", "take (?:it|this|things|your [a-z]+) to the next level", 2, "Take it to the next level", "Ad copy.", "Say what gets better."],
+    ["endofday", "at the end of the day", 1, "At the end of the day", "Filler.", "Cut it."],
+    ["whenitcomes", "when it comes to", 1, "When it comes to", "Filler before the topic.", "Name the topic directly."],
+    ["diveinto", "(?:let'?s |we'?ll )?(?:take a )?(?:deep )?dive (?:deep )?into|deep dive", 2, "Dive into", "Chatbot favourite for starting anything.", "Say look at."],
+    ["gamechanger", "game[- ]chang(?:er|ing)", 2, "Game changer", "Hype word.", "Say what changes."],
+    ["herethething", "here'?s (?:the thing|the kicker|the catch|the deal|why|what (?:happened|you need to know))", 2, "Here's the thing", "Signpost that delays the point.", "Make the point."],
+    ["letsinkin", "let that sink in|buckle up|make no mistake|spoiler alert|the bottom line(?: is)?|in a world where", 2, "Let that sink in", "Thread bait signposts.", "Cut it."],
+    ["conclusion", "(?:in conclusion|in summary|to sum up|to summari[sz]e|all in all|in essence)", 2, "In conclusion", "Compulsive summary. Short texts don't need one.", "End on the last real point."],
+    ["transitions", "(?:moreover|furthermore|additionally|consequently|notably|ultimately|overall),", 1, "Moreover, furthermore", "Essay connectors that pile up in model text.", "Use and, also, or nothing."],
+    ["thatbeing", "that being said|with that in mind|it goes without saying|needless to say", 1, "That being said", "Filler transition.", "Cut it."],
+    ["myriad", "a (?:myriad|plethora|wide (?:range|array|variety)|diverse range) of", 1, "A myriad of", "Padding for many.", "Say many, or the number."],
+    ["journey", "embark(?:ing)? on (?:a|an|this|your) (?:\\w+ )?journey|on (?:this|your|our) journey", 2, "Embark on a journey", "Everything is a journey to a model.", "Say start."],
+    ["harness", "harness(?:ing)? the power of|the power of", 1, "Harness the power of", "Hype padding.", "Say use."],
+    ["reminder", "(?:serves as|is) a (?:powerful|stark|vivid|poignant|gentle) reminder", 2, "A powerful reminder", "Grand phrase.", "Say it shows."],
+    ["paveway", "pav(?:e|es|ing) the way|shed(?:s|ding)? light on|sense of community|foster(?:s|ing)? a sense of", 1, "Pave the way", "Stock phrase.", "Say it plainly."],
+    ["lookfurther", "look no further|elevate your|seamless(?:ly)? integrat\\w*", 2, "Look no further", "Marketing voice.", "Say what it does."]
+  ];
+  enPhrases.forEach(function (x) { add("en", "phrase", x[0], "\\b(?:" + x[1] + ")\\b", x[2], x[3], x[4], x[5]); });
+
+  var enWords = {
+    delve: ["delv(?:e|es|ed|ing)", 2, "Delves up 28 times in 2024 papers in one study. The best known model word.", "look at, dig into"],
+    tapestry: ["tapestr(?:y|ies)", 1.5, "Flowery word models overuse.", "mix"],
+    testament: ["testament", 1, "Overused for shows.", "sign"],
+    underscore: ["underscor(?:e|es|ed|ing)", 1, "Up about 11 times in 2024 papers in one study.", "shows"],
+    showcase: ["showcas(?:e|es|ed|ing)", 1, "Up about 10 times in 2024 papers in one study.", "show"],
+    pivotal: ["pivotal", 1, "Inflated importance.", "key"],
+    crucial: ["crucial(?:ly)?", 1, "Inflated importance.", "key, needed"],
+    intricate: ["intricate(?:ly)?|intricacies", 1, "Model favourite.", "detailed"],
+    multifaceted: ["multifaceted|nuanced", 1, "Says complex without saying how.", "say how"],
+    foster: ["foster(?:s|ed|ing)?", 1, "Model favourite.", "build, grow"],
+    enhance: ["enhanc(?:e|es|ed|ing|ement)", 0.5, "Common in model text.", "improve"],
+    seamless: ["seamless(?:ly)?", 1, "Marketing word.", "smooth"],
+    robust: ["robust", 0.5, "Model favourite.", "solid"],
+    leverage: ["leverag(?:e|es|ed|ing)", 1, "Business padding.", "use"],
+    utilize: ["utili[sz](?:e|es|ed|ing|ation)", 1, "Long word for use.", "use"],
+    realm: ["realms?", 1, "Fantasy word in plain writing.", "area"],
+    vibrant: ["vibrant", 1, "Model favourite.", "lively"],
+    nestled: ["nestled", 1, "Travel copy cliche.", "set"],
+    boasts: ["boasts?", 1, "Brochure verb.", "has"],
+    unwavering: ["unwavering", 1, "Model favourite.", "steady"],
+    holistic: ["holistic(?:ally)?", 1, "Vague.", "whole"],
+    transformative: ["transformative|groundbreaking|revolutionary|revolutioni[sz]e", 1, "Hype word.", "say what changes"],
+    empower: ["empower(?:s|ed|ing|ment)?", 1, "Hype word.", "help, let"],
+    elevate: ["elevat(?:e|es|ed|ing)", 1, "Marketing verb.", "improve"],
+    meticulous: ["meticulous(?:ly)?", 1, "Model favourite.", "careful"],
+    commendable: ["commendable|noteworthy|invaluable|unparalleled", 1, "Inflated praise.", "good, useful"],
+    paramount: ["paramount", 1, "Inflated importance.", "most important"],
+    bustling: ["bustling", 1, "Travel copy cliche.", "busy"],
+    beacon: ["beacons?", 1, "Flowery.", "example"],
+    symphony: ["symphony of", 1, "Flowery.", "mix"],
+    resonate: ["resonat(?:e|es|ed|ing)", 1, "Model favourite.", "connect, land"],
+    harness: ["harness(?:es|ed|ing)?", 0.5, "Model favourite.", "use"],
+    streamline: ["streamlin(?:e|es|ed|ing)", 0.5, "Business padding.", "simplify"],
+    landscape: ["landscape", 0.5, "Used for any field or market.", "field, market"],
+    navigate: ["navigat(?:e|es|ed|ing)", 0.5, "Used for any difficulty.", "handle"],
+    embark: ["embark(?:s|ed|ing)?", 1, "Used for any start.", "start"],
+    cornerstone: ["cornerstone|linchpin", 1, "Flowery.", "base"],
+    interplay: ["interplay", 1, "Model favourite.", "mix"],
+    captivating: ["captivating|enchanting|breathtaking|awe[- ]inspiring", 1, "Model favourite.", "say what you saw"],
+    profound: ["profound(?:ly)?", 0.5, "Inflated.", "deep, big"],
+    bolster: ["bolster(?:s|ed|ing)?|spearhead(?:s|ed|ing)?|garner(?:s|ed|ing)?", 1, "News speak models copy.", "boost, lead, get"],
+    unleash: ["unleash(?:es|ed|ing)?", 1, "Hype word.", "release"],
+    tailored: ["tailored", 0.5, "Marketing word.", "made for"],
+    comprehensive: ["comprehensive", 0.5, "Model favourite.", "full"],
+    insightful: ["insightful|thought[- ]provoking", 1, "Inflated praise.", "useful"],
+    dynamic: ["dynamic", 0.5, "Vague.", "say how"],
+    journey: ["journey", 0.5, "Everything is a journey to a model.", "say what it is"]
+  };
+  Object.keys(enWords).forEach(function (k) {
+    var x = enWords[k];
+    add("en", "word", "w_" + k, "\\b(?:" + x[0] + ")\\b", x[1], k, x[2], "Try: " + x[3]);
+  });
+
+  add("en", "bot", "certainly", "(?:^|(?<=[\\n.!?]\\s?))\\s*(?:Certainly|Absolutely|Of course|Sure|Great question|Great idea|Excellent question)[!,.]", 3, "Certainly!",
+    "Chatbot greeting pasted straight into the text.", "Delete it.", "gim");
+  add("en", "bot", "hopehelps", "\\bI hope (?:this|that) (?:helps|clarifies|was helpful)\\b|\\bhope this helps\\b", 3, "I hope this helps",
+    "Chatbot sign off.", "Delete it.");
+  add("en", "bot", "feelfree", "\\bfeel free to\\b|\\blet me know if you(?:'d| would)? (?:have|need|want|like)\\b|\\bhappy to help\\b|\\bI'?d be (?:happy|glad) to\\b", 2, "Feel free to",
+    "Assistant voice. Fine in support email, odd in a post.", "Cut it or say it your way.");
+  add("en", "bot", "asanai", "\\bas an AI(?: language model)?\\b|\\bas of my (?:last )?(?:knowledge|training) (?:cutoff|update)\\b|\\bI (?:don'?t|do not) have (?:personal|real[- ]time)\\b", 5, "As an AI",
+    "Model disclaimer left in the text.", "Delete it.");
+  add("en", "bot", "heresa", "\\bhere(?:'s| is) (?:a|an|the|your) (?:breakdown|summary|quick (?:summary|overview|breakdown)|revised|rewritten|polished|improved|refined|overview)\\b", 2, "Here's a breakdown",
+    "Assistant handing over a draft.", "Start with the content.");
+  add("en", "bot", "artifact", "contentReference|oaicite|oai_citation|utm_source=chatgpt\\.com", 5, "Copy and paste residue",
+    "Citation markers from the ChatGPT window. About as sure a sign as it gets.", "Delete them.", "g");
+  add("en", "bot", "findswell", "\\bI hope (?:this|my) (?:email|message|note) finds you well\\b", 2, "Hope this email finds you well",
+    "Template opener. Humans use it too, models use it always.", "Start with why you are writing.");
+
+  add("en", "fmt", "bold", "\\*\\*[^*\\n]{1,60}\\*\\*", 1, "Bold everywhere",
+    "Bolded key terms in every line, pasted from a chat window.", "Remove the stars.", "g");
+  add("en", "fmt", "emojihead", "^[ \\t]*(?:\\p{Extended_Pictographic})\\uFE0F?[ \\t]*(?=\\S)", 1, "Emoji bullets",
+    "Rocket and sparkle emoji at the start of lines, the thread template look.", "Use plain lines.", "gmu");
+  add("en", "fmt", "arrow", "\u2192|\u27a1\ufe0f?", 0.5, "Arrows",
+    "Arrows used as bullets or as therefore.", "Use words.", "g");
+
+  /* ---------------- Japanese ----------------
+     Collected from Japanese write ups on AI flavoured writing, see PATTERNS.md for the sources.
+     Most of these are fine once. They read as AI when they pile up. */
+  function ja(cat, id, re, w, label, why, fix) { add("ja", cat, id, re, w, label, why, fix); }
+
+  // Chatbot leftovers
+  ja("bot", "ja_mochiron", /^[ \t　]*(?:もちろんです|承知しました|かしこまりました|はい、承知しました)[！!。、]/gm, 3, "もちろんです！", "AIへの指示に答えた返事が、そのまま残っています。", "削除して中身から書く");
+  ja("bot", "ja_ikani", /以下(?:に|のとおり|の通り|では)[^。\n]{0,30}(?:まとめ|整理|紹介|挙げ|解説)/g, 2, "以下にまとめました", "チャットの返答の決まり文句です。", "削除して本題から書く");
+  ja("bot", "ja_question", /(?:素晴らしい|鋭い|良い|いい)(?:ご?質問|視点|ご指摘)です(?:ね)?|ご質問ありがとうございます/g, 3, "素晴らしい質問ですね", "お世辞から入るAIの返答です。", "削除して答えから書く");
+  ja("bot", "ja_yakunitate", /(?:お役に立て|参考にな)(?:れば|たら)(?:幸いです|嬉しいです)|一助となれば幸い/g, 3, "お役に立てれば幸いです", "チャットボットとブログの締めの定型句です。", "削除する");
+  ja("bot", "ja_kigaru", /(?:ご不明な点|ご質問|お困りのこと)[^。\n]{0,12}(?:あれば|ありましたら)[^。\n]{0,6}(?:お気軽に|いつでも)/g, 3, "お気軽にお尋ねください", "チャットの締めの申し出です。", "削除する");
+  ja("bot", "ja_cutoff", /知識のカットオフ|リアルタイムの情報にアクセスでき|最新の情報と異なる場合があります/g, 4, "知識のカットオフ", "モデルの断り書きが残っています。", "削除し、必要なら確認した日付を書く");
+  ja("bot", "ja_artifact", /contentReference|oaicite|oai_citation|utm_source=chatgpt\.com/g, 5, "コピペの痕跡", "ChatGPTの引用表示の残骸です。ほぼ確実な痕跡です。", "削除する");
+
+  // Stock phrases
+  ja("phrase", "ja_ikaga", /いかがでした(?:でしょう)?か/g, 3, "いかがでしたか", "情報のない締めの一文です。AI以前のまとめブログ時代からある定型です。", "削除し、具体的な一文で終える");
+  ja("phrase", "ja_honkiji", /(?:本|この)記事では[^。\n]{0,40}(?:解説|紹介|まとめ|説明)/g, 2, "本記事では〜を解説します", "中身の前に構成を予告する書き出しです。", "いきなり本題から書く");
+  ja("phrase", "ja_kaisetsu", /(?:について|を)(?:詳しく)?(?:解説|ご?紹介|ご?説明)(?:します|していきます|いたします)|(?:見て|掘り下げて|整理して)いきましょう/g, 2, "〜を解説していきます", "見出しを読めば分かることを繰り返す前置きです。", "削除して一つ目の内容を書く");
+  ja("phrase", "ja_kinen", /近年、[^。\n]{0,30}(?:急速に|ますます)|注目を集めて(?:い|お)|現代社会において|デジタル時代において|今日の(?:社会|世界)において|ますます重要に/g, 2, "現代社会において", "どんな話題にも使える、時代から入る書き出しです。", "具体的な数字や自分の体験から書く");
+  ja("phrase", "ja_nayami", /で悩んでいませんか|そんなあなた(?:へ|に)/g, 2, "〜で悩んでいませんか", "広告の呼び込みの型です。", "事実か意見から書き出す");
+  ja("phrase", "ja_ketsuron", /結論から(?:言うと|申し上げますと)|正直に言うと|率直に言うと/g, 1, "結論から言うと", "前置きの決まり文句です。", "そのまま結論を書く");
+  ja("phrase", "ja_matome", /(?:まとめると|総じて|要するに|結論として|以上のように|総合的に見ると)、/g, 2, "まとめると、", "型どおりのまとめです。", "「つまり」にするか削除する");
+  ja("phrase", "ja_zehi", /ぜひ[^。\n]{0,14}(?:参考|試し|活用|取り入れ|チェック)/g, 1.5, "ぜひ試してみてください", "儀式のような呼びかけです。", "1記事に1回まで");
+  ja("phrase", "ja_kanosei", /大きな可能性を秘め|無限の可能性|新たな章の幕開け|今後の展開に注目/g, 2, "大きな可能性を秘めています", "中身のない、未来に向けた締めです。", "次の具体的な予定や数字を書く");
+  ja("phrase", "ja_yakuwari", /(?:重要な|大きな|不可欠な|中心的な)役割を(?:果たし|担)|欠かせない存在|必要不可欠/g, 2, "重要な役割を果たす", "役割を大げさに言う定型です。", "何をするのかを書く");
+  ja("phrase", "ja_kachi", /新たな価値|価値を(?:創出|提供)|未来を切り[拓開]/g, 1.5, "新たな価値を創出", "PR文の決まり文句です。", "誰に何の得があるかを書く");
+
+  // Sentence habits
+  ja("struct", "ja_ieru", /と(?:言|い)える(?:でしょう|だろう)|と言えます/g, 2.5, "〜と言えるでしょう", "根拠のない、ぼかした結論です。", "「〜です」か「〜だと思う」");
+  ja("struct", "ja_nodehanai", /のではないでしょうか[。？?]|に他な(?:らない|りません)|と言っても過言では(?:ない|ありません)|であることは間違いな/g, 2, "〜のではないでしょうか", "やわらかい断定、または硬すぎる強調です。", "言い切るか「〜だと思う」");
+  ja("struct", "ja_juuyou", /ことが(?:非常に|とても)?(?:重要|大切|不可欠|鍵)(?:です|となります|になります)|が求められます/g, 2, "〜することが大切です", "教科書のようなお説教です。", "理由を書くか、文ごと削除する");
+  ja("struct", "ja_juuyounoha", /(?:最も|特に)?(?:重要|大切|大事)なのは|注目すべきは/g, 1.5, "重要なのは〜", "要点を言う前に予告しています。", "要点を直接書く");
+  ja("struct", "ja_dakedenaku", /単に[^。\n]{1,20}だけでなく|だけでなく[^。\n]{1,25}も|単なる[^。\n]{1,15}ではなく/g, 2.5, "〜だけでなく〜も", "「XではなくY」型の対比で盛り上げる癖です。", "言いたい方だけ直接書く");
+  ja("struct", "ja_dehanaku", /ではなく、/g, 1, "〜ではなく、〜", "英語の not X but Y を直訳したような対比です。", "言いたい方だけ書く");
+  ja("struct", "ja_kaginaru", /(?:鍵|カギ)(?:と|に)な(?:る|ります)/g, 2, "〜が鍵となります", "決まり文句の比喩です。", "何が必要かを書く");
+  ja("struct", "ja_npoint", /[2-7２-７二三四五六七]つの(?:ポイント|理由|ステップ|コツ|観点|原則|メリット|方法)/g, 1.5, "3つのポイント", "なんでも数をそろえてまとめる癖です。", "数を決めずに書く");
+  ja("struct", "ja_rhetq", /(?:なぜ|どうして)(?:なの)?でしょうか[？?]\s*(?:それは|答えは)|その(?:答え|理由)は[？?]/g, 2, "なぜでしょうか？それは", "自分で問いを立てて自分で答える型です。", "直接述べる");
+  ja("struct", "ja_korenoyori", /これにより/g, 1, "これにより", "人はあまり使わない、硬いつなぎの言葉です。", "「そのため」か、文をつなぐ");
+  ja("struct", "ja_shimesu", /(?:ことを|傾向を)示している|可能性を示唆している|点に留意が必要/g, 1.5, "〜ことを示している", "論文を直訳したような言い回しです。", "「〜だろう」と書き、出典を添える");
+  ja("struct", "ja_dekiru", /することが(?:でき|可能)/g, 1, "〜することができます", "英語の直訳調の回りくどさです。", "「〜できます」");
+  ja("struct", "ja_kanten", /という(?:観点|視点)(?:から|で)|という点(?:で|において)/g, 1, "〜という観点から", "水増しの言い回しです。", "削除するか「〜で見ると」");
+  ja("struct", "ja_ikkai", /一概には言え|ケースバイケース|場合によります|一長一短|目的に応じて[^。\n]{0,15}使い分けることが(?:重要|大切)/g, 2, "一概には言えません", "立場を決めずに逃げる型です。", "立場を一つ決めて根拠を添える");
+  ja("struct", "ja_kangaerareru", /と考えられ(?:ます|るでしょう)/g, 1, "〜と考えられます", "主語のない、ぼかした言い方です。", "「私は〜と思う。理由は〜」");
+  ja("struct", "ja_mazusaisho", /まず最初に|第一に/g, 1, "まず最初に", "手順書のような並べ方です。", "「まず」か、自然な流れで書く");
+
+  // Pet words
+  ja("word", "ja_seamless", /シームレス/g, 1.5, "シームレス", "カタカナの流行語です。", "途切れずに、スムーズに");
+  ja("word", "ja_hype", /革命的|ゲームチェンジャー|パラダイムシフト|可能性を解き放|民主化する|スーパーチャージ|未来を変える|究極の|次世代の/g, 1.5, "革命的", "誇大な言葉です。", "何がどう変わったかを書く");
+  ja("word", "ja_abstract", /包括的|網羅的|多角的|革新的|画期的|飛躍的|圧倒的/g, 1, "画期的", "中身のない評価語です。", "何がどう変わったかを書く");
+  ja("word", "ja_kaizoudo", /解像度(?:が|を)(?:上が|上げ|高)|腹落ち|メンタルモデル|手触り感|温度感|肌感/g, 1.5, "解像度が上がる", "理解や手触りを装う言葉です。最近のAIの文章によく出ます。", "どこが分かったのかを具体的に書く");
+  ja("word", "ja_metaphor", /羅針盤|車の両輪|架け橋|起爆剤|潤滑油/g, 1.5, "羅針盤", "型どおりの比喩です。", "具体的に書く");
+  ja("word", "ja_samazama", /(?:様々|さまざま|多様|幅広い)な/g, 0.5, "さまざまな", "あいまいな量の言い方です。人もよく使うので軽く数えます。", "具体例を2つ挙げる");
+  ja("word", "ja_tekisetsu", /適切な|効率的な|必要に応じて/g, 0.5, "適切な", "何が適切かを書いていない言葉です。", "基準や数字を書く");
+  ja("word", "ja_hijouni", /(?:非常に|極めて)(?:重要|有効|効果的|魅力的|便利|強力)/g, 1, "非常に重要", "根拠のない強調です。", "根拠を一つ添える");
+  ja("word", "ja_newgen", /静かに壊れ|黙って(?:スキップ|無視)|地味に効|時間を溶か|落とし穴|伴走|橋渡し/g, 1, "静かに壊れる", "2025年以降のモデルの文章に増えた言い回しです。", "何が起きるかをそのまま書く");
+  ja("word", "ja_katakana", /コンテキスト|アライメント|ナレッジ|プライオリティ|レバレッジ|ディープダイブ|アラインする|シナジー/g, 1, "ナレッジ", "日本語で言えるのにカタカナ語を使っています。", "知識、文脈、優先度など");
+  ja("word", "ja_dodai", /土台/g, 0.5, "土台", "AI以後に急に増えた語のひとつです。", "基本、基礎");
+
+  // Symbols and formatting
+  ja("punct", "ja_dash", /——|──|―{2}|—/g, 2, "ダッシュ「—」", "英語から持ち込まれたダッシュです。小説の「――」は普通の用法です。", "読点、句点、改行にする");
+  ja("fmt", "ja_labelcolon", /\*\*[^*\n]{1,30}\*\*[：:]/g, 2, "**見出し**：説明", "太字のラベルとコロンで並べる、AIの典型的な書式です。", "文章に溶かす");
+  ja("fmt", "ja_colonend", /(?:します|ます|です|例えば|以下)[：:][ \t]*$/gm, 1.5, "〜は次のとおりです：", "英語の as follows: をそのまま持ち込んだ癖です。", "「次のとおりです。」");
+  ja("fmt", "ja_bold", /\*\*[^*\n]{1,60}\*\*/g, 1, "太字だらけ", "チャット画面の太字記号がそのまま残っています。", "記号を外す");
+  ja("fmt", "ja_emojihead", /^[ \t　]*\p{Extended_Pictographic}️?[ \t　]*(?=\S)/gmu, 1, "絵文字の箇条書き", "✅や🚀で始まる行。AIの投稿テンプレートの見た目です。", "普通の行にする");
+  ja("fmt", "ja_mdhead", /^#{1,4}[ \t]/gm, 1, "Markdownの見出し記号", "見出し記号がそのまま残っています。", "記号を外す");
+
+  /* ---------------- engine ---------------- */
+  var compiled = null;
+  function compile() {
+    if (compiled) return compiled;
+    compiled = P.map(function (p) {
+      var re;
+      try { re = new RegExp(p.re, p.f.indexOf("g") < 0 ? p.f + "g" : p.f); } catch (e) { re = null; }
+      return { p: p, re: re };
+    }).filter(function (x) { return x.re; });
+    return compiled;
+  }
+
+  var JA_CHAR = /[\u3040-\u30ff\u3400-\u9fff\uff66-\uff9f]/g;
+  function detect(text) {
+    var ja = (text.match(JA_CHAR) || []).length;
+    var latin = (text.match(/[A-Za-z]/g) || []).length;
+    return ja > latin * 0.25 ? "ja" : "en";
+  }
+  function countUnits(text, lang) {
+    if (lang === "ja") return text.replace(/\s/g, "").length;
+    return (text.match(/[A-Za-z0-9\u00C0-\u024F]+(?:['\u2019][A-Za-z]+)*/g) || []).length;
+  }
+
+  // Score: weighted habits per 1,000 English words, or per 2,000 Japanese characters.
+  // Short texts are scored as if they had at least 100 words or 200 characters, so one dash in a tweet does not read as 150.
+  var BANDS = [
+    { max: 15, key: "plain", en: "Reads human", ja: "人間らしい" },
+    { max: 40, key: "some", en: "A few tells", ja: "少しAIっぽい" },
+    { max: 80, key: "many", en: "Lots of tells", ja: "かなりAIっぽい" },
+    { max: 1e9, key: "bot", en: "Chatbot voice", ja: "チャットボットの文章" }
+  ];
+
+  function analyze(text, opts) {
+    opts = opts || {};
+    text = String(text || "");
+    var lang = opts.lang && opts.lang !== "auto" ? opts.lang : detect(text);
+    var raw = [];
+    compile().forEach(function (c) {
+      if (c.p.lang !== lang) return;
+      c.re.lastIndex = 0;
+      var m, guard = 0;
+      while ((m = c.re.exec(text)) && guard++ < 5000) {
+        var s = m.index, e = s + m[0].length;
+        if (e === s) { c.re.lastIndex++; continue; }
+        // trim leading and trailing spaces from the highlighted span
+        while (s < e && /\s/.test(text[s])) s++;
+        while (e > s && /\s/.test(text[e - 1])) e--;
+        if (e > s) raw.push({ s: s, e: e, p: c.p });
+      }
+    });
+    function resolve(list) {
+      list.sort(function (a, b) { return a.s - b.s || b.p.w - a.p.w || (b.e - b.s) - (a.e - a.s); });
+      var out = [], lastEnd = -1;
+      list.forEach(function (h) {
+        if (h.s >= lastEnd) { out.push(h); lastEnd = h.e; }
+        else {
+          var prev = out[out.length - 1];
+          // a heavier pattern that overlaps replaces a lighter one
+          if (prev && h.p.w > prev.p.w) { out[out.length - 1] = h; lastEnd = h.e; }
+        }
+      });
+      return out;
+    }
+    // Dashes are counted on their own, even inside a sentence trick, and drawn nested inside it.
+    var prim = resolve(raw.filter(function (h) { return h.p.cat !== "punct"; }));
+    var dash = resolve(raw.filter(function (h) { return h.p.cat === "punct"; }));
+    var hits = prim.slice();
+    dash.forEach(function (d) {
+      var host = null;
+      for (var i = 0; i < prim.length; i++) {
+        var h = prim[i];
+        if (d.s < h.e && d.e > h.s) { host = h; break; }
+      }
+      if (!host) hits.push(d);
+      else if (d.s >= host.s && d.e <= host.e) { d.inner = true; hits.push(d); }
+    });
+    hits.sort(function (a, b) { return a.s - b.s || (a.inner ? 1 : 0) - (b.inner ? 1 : 0); });
+    var units = countUnits(text, lang);
+    var per = lang === "ja" ? 2000 : 1000, floor = lang === "ja" ? 200 : 100;
+    var weight = 0, byCat = {}, byPat = {};
+    hits.forEach(function (h) {
+      weight += h.p.w;
+      var c = byCat[h.p.cat] || (byCat[h.p.cat] = { n: 0, w: 0 });
+      c.n++; c.w += h.p.w;
+      var b = byPat[h.p.id] || (byPat[h.p.id] = { id: h.p.id, cat: h.p.cat, label: h.p.label, why: h.p.why, fix: h.p.fix, n: 0, w: 0, examples: [] });
+      b.n++; b.w += h.p.w;
+      if (b.examples.length < 3) b.examples.push(text.slice(h.s, h.e));
+    });
+    var score = units ? weight / Math.max(units, floor) * per : 0;
+    var band = BANDS.filter(function (b) { return score < b.max; })[0];
+    return {
+      lang: lang, units: units, per: per, weight: weight,
+      score: Math.round(score * 10) / 10, band: band,
+      hits: hits.map(function (h) { return { s: h.s, e: h.e, id: h.p.id, cat: h.p.cat, w: h.p.w, inner: !!h.inner }; }),
+      byCat: byCat,
+      byPattern: Object.keys(byPat).map(function (k) { return byPat[k]; }).sort(function (a, b) { return b.w - a.w; })
+    };
+  }
+
+  /* Simple swaps. Only word level changes that keep the meaning. Sentence tricks are left for a human. */
+  var EN_FIX = [
+    [/\s*\u2014\s*/g, ", "], [/\s\u2013\s/g, ", "], [/\s--\s/g, ", "],
+    [/^\s*(?:Certainly|Absolutely|Of course|Sure|Great question|Great idea|Excellent question)[!,.]\s*/gim, ""],
+    [/\s*\bI hope (?:this|that) (?:helps|clarifies|was helpful)[!.]?/gi, ""],
+    [/^\s*here(?:'s| is) (?:a|an|the|your) (?:breakdown|summary|quick (?:summary|overview|breakdown)|overview)[^\n]*[.:]\s*$/gim, ""],
+    [/\*\*([^*\n]{1,60})\*\*/g, function (m, a) { return a; }],
+    [/\bit(?:'s| is) (?:important|crucial|essential|worth) (?:to )?(?:note|noting|remember|mention|mentioning|keep in mind)(?: that)?,?\s*/gi, ""],
+    [/\b(?:in conclusion|in summary|to sum up|all in all|in essence),\s*/gi, ""],
+    [/\b(?:moreover|furthermore|additionally),\s*/gi, "Also, "],
+    [/\b(?:overall|ultimately|notably),\s*/gi, ""],
+    [/\bin today'?s (?:fast[- ]paced|digital|modern|ever[- ]changing|rapidly evolving|interconnected) (?:world|age|landscape|era),?\s*/gi, ""],
+    [/\bdelv(e|es|ed|ing) into\b/gi, function (m, a) { return { e: "look at", es: "looks at", ed: "looked at", ing: "looking at" }[a.toLowerCase()]; }],
+    [/\bdelv(e|es|ed|ing)\b/gi, function (m, a) { return { e: "dig", es: "digs", ed: "dug", ing: "digging" }[a.toLowerCase()]; }],
+    [/\butili[sz](e|es|ed|ing)\b/gi, function (m, a) { return { e: "use", es: "uses", ed: "used", ing: "using" }[a.toLowerCase()]; }],
+    [/\bleverag(e|es|ed|ing)\b/gi, function (m, a) { return { e: "use", es: "uses", ed: "used", ing: "using" }[a.toLowerCase()]; }],
+    [/\bshowcas(e|es|ed|ing)\b/gi, function (m, a) { return { e: "show", es: "shows", ed: "showed", ing: "showing" }[a.toLowerCase()]; }],
+    [/\bunderscor(e|es|ed|ing)\b/gi, function (m, a) { return { e: "show", es: "shows", ed: "showed", ing: "showing" }[a.toLowerCase()]; }],
+    [/\bfoster(s|ed|ing)?\b/gi, function (m, a) { return { "": "grow", s: "grows", ed: "grew", ing: "growing" }[(a || "").toLowerCase()]; }],
+    [/\bembark(?:ing)? on\b/gi, "start"],
+    [/\b(?:a (?:myriad|plethora|wide range|wide array|wide variety|diverse range) of)\b/gi, "many"],
+    [/\bplays? an? (?:crucial|vital|pivotal|key|important|significant|central) role in\b/gi, function (m) { return /^plays/i.test(m) ? "matters for" : "matter for"; }],
+    [/\b(?:is|stands as|serves as) a (?:true |powerful )?testament to\b/gi, "shows"],
+    [/\bnavigat(?:e|ing) the (?:complexities|challenges|intricacies) of\b/gi, "handle"],
+    [/\bin the (?:realm|world) of\b/gi, "in"],
+    [/\bcrucial\b/gi, "key"], [/\bpivotal\b/gi, "key"], [/\bparamount\b/gi, "most important"],
+    [/\bseamlessly\b/gi, "smoothly"], [/\bseamless\b/gi, "smooth"],
+    [/\b(?:rich|vibrant|intricate|complex) tapestry of\b/gi, "mix of"], [/\btapestry\b/gi, "mix"],
+    [/\bvibrant\b/gi, "lively"], [/\bboasts\b/gi, "has"], [/\bmeticulously\b/gi, "carefully"], [/\bmeticulous\b/gi, "careful"],
+    [/\benhanc(e|es|ed|ing)\b/gi, function (m, a) { return { e: "improve", es: "improves", ed: "improved", ing: "improving" }[a.toLowerCase()]; }],
+    [/\belevat(e|es|ed|ing)\b/gi, function (m, a) { return { e: "improve", es: "improves", ed: "improved", ing: "improving" }[a.toLowerCase()]; }],
+    [/\bgame[- ]changer\b/gi, "big change"],
+    [/\bfeel free to\b/gi, "you can"],
+    [/\bin order to\b/gi, "to"],
+    [/\b(?:let'?s |we'?ll )?(?:take a )?deep dive into\b/gi, "a close look at"],
+    [/\b(?:let'?s )dive into\b/gi, "let's look at"]
+  ];
+
+
+  var JA_FIX = [
+    [/^[ \t　]*(?:もちろんです|承知しました|かしこまりました|はい、承知しました)[！!。、]\s*/gm, ""],
+    [/以下(?:に|のとおり|の通り)、?[^。\n]{0,30}(?:まとめ|整理|紹介)(?:ました|ます|しました|します|いたします)。\s*/g, ""],
+    [/\s*(?:お役に立て|参考にな)(?:れば|たら)(?:幸いです|嬉しいです)。?/g, ""],
+    [/いかがでした(?:でしょう)?か[？?。！!]?\s*/g, ""],
+    [/(?:現代社会|デジタル時代|今日の(?:社会|世界))において、?/g, ""],
+    [/(?:まとめると|要するに|結論として|以上のように|総合的に見ると)、/g, "つまり、"],
+    [/総じて、/g, ""],
+    [/することが(?:でき|可能)/g, function (m) { return /可能/.test(m) ? "でき" : "でき"; }],
+    [/シームレスに/g, "スムーズに"], [/シームレスな/g, "スムーズな"],
+    [/(?:鍵|カギ)となります/g, "大事です"], [/(?:鍵|カギ)となる/g, "大事な"], [/(?:鍵|カギ)になります/g, "大事です"],
+    [/ぜひ、?/g, ""],
+    [/\*\*([^*\n]{1,30})\*\*[：:]\s*/g, function (m, a) { return a + "。"; }],
+    [/\*\*([^*\n]{1,60})\*\*/g, function (m, a) { return a; }],
+    [/\s*(?:——|──|―{2}|—)\s*/g, "、"],
+    [/(?:非常に|極めて)(重要|有効|効果的|魅力的|便利|強力)/g, function (m, a) { return "とても" + a; }]
+  ];
+
+  function keepCase(orig, rep) {
+    if (!rep) return rep;
+    if (orig && orig[0] === orig[0].toUpperCase() && orig[0] !== orig[0].toLowerCase()) return rep[0].toUpperCase() + rep.slice(1);
+    return rep;
+  }
+
+  function fix(text, opts) {
+    opts = opts || {};
+    var lang = opts.lang && opts.lang !== "auto" ? opts.lang : detect(text);
+    var rules = lang === "ja" ? JA_FIX : EN_FIX;
+    var out = String(text || ""), changes = 0;
+    rules.forEach(function (r) {
+      out = out.replace(r[0], function () {
+        var args = Array.prototype.slice.call(arguments);
+        var m = args[0];
+        var rep = typeof r[1] === "function" ? r[1].apply(null, args) : r[1];
+        if (rep === undefined) return m;
+        changes++;
+        return lang === "en" ? keepCase(m, rep) : rep;
+      });
+    });
+    if (lang === "en") {
+      out = out
+        .replace(/ ,/g, ",").replace(/,\s*,/g, ",").replace(/, ([.!?])/g, "$1").replace(/,\s*$/gm, ".")
+        .replace(/([.!?]\s+|^)([a-z])/gm, function (m, a, b) { return a + b.toUpperCase(); })
+        .replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").replace(/^\s+/, "");
+    }
+    return { text: out, changes: changes };
+  }
+
+  return { analyze: analyze, fix: fix, detect: detect, CATS: CATS, BANDS: BANDS, PATTERNS: P, version: "1.0.0" };
+});
+
+</script>
+<script>
+(function(){
+"use strict";
+var S = window.SlopCheck;
+var Q = new URLSearchParams(location.search);
+var REC = Q.get("rec") === "1";
+if (REC) document.body.classList.add("rec");
+
+/* ---------- text ---------- */
+var T = {
+  en: {
+    demos:"Demos", h1a:"Slop", h1b:"Check",
+    sub:"Paste a post, an email or an essay. The habits chatbots lean on light up: pet words, stock phrases, em dashes, It's not X, it's Y. English and 日本語.",
+    b1:"Runs in your browser, nothing is sent", b3:"Free and open source", npat:"{n} habits checked",
+    sBot:"Chatbot sample", sPlain:"Plain sample", sJa:"日本語の例", fix:"Swap the easy ones", undo:"Undo", copy:"Copy text", clear:"Clear", ph:"Paste your text here, a post, an email, an essay. English or 日本語.",
+    found:"What it found", none:"Nothing yet. Paste some text or try a sample.", clean:"No habits found. Nice.",
+    perEn:"per 1,000 words", perJa:"per 2,000 chars",
+    words:"{n} words", chars:"{n} characters", hits:"{n} habits", short:"short text, scored as 100 words",
+    shortJa:"short text, scored as 200 characters",
+    band_plain:"Under 15. This reads like a person wrote it.", band_some:"A few habits. Fine for most writing, worth a look before you post.", band_many:"Lots of habits. People who read a lot of chatbot text will notice.", band_bot:"This reads like it came straight out of a chat window.",
+    tryi:"Try: ", fixed:"{n} swaps. The sentence tricks are left for you.", nofix:"Nothing simple to swap. The rest needs a human.", copied:"Copied",
+    k1:"The news behind it", d_h:"A 2.5 GB model that unlearned the habits",
+    d_p:"On October 19 Erik Markus Kannike shared qwen3-4b-deslop. A small LoRA on Qwen3-4B, trained for 1 to 3 hours on an M2 MacBook Air, plus a sign flip on four neurons, took most of the chatbot habits out of its writing. He scored 40 held out answers with his own list of habit patterns.",
+    c1:"Habit score per 1,000 words", c2:"Em dashes per 1,000 words", lower:"lower is better",
+    f1:"<b>30 of 30</b> quiz answers still right", f2:"<b>161</b> filtered answers to train on", f3:"<b>rank 16</b> LoRA, <b>175 bytes</b> of neuron edits", f4:"<b>2.5 GB</b>, runs in Ollama",
+    d_note:"His pattern list is not published, so his scores and the score on this page are not on the same scale. Same idea, our own list. Numbers from his write up.",
+    k2:"How it works", h_h:"A list of habits, weighted",
+    how:["It looks for {en} English and {ja} Japanese habits that show up far more in chatbot text than in ordinary writing.","Each habit has a weight. Em dashes, sentence tricks and chatbot leftovers count most, single pet words count least.","The score is the weighted count per 1,000 words, or per 2,000 Japanese characters. Under 15 usually reads human.","Swap the easy ones only replaces words that have a plain equivalent and removes filler. It never rewrites your sentences, so read the result before you post it.","Everything runs on this page. Your text is not sent or stored anywhere."],
+    w_h:"A habit is not proof", w_p:"Plenty of people write like this, especially in school essays, business email and translated text, and good writers use an em dash on purpose. Please don't use this to accuse anyone of using AI. Use it on your own drafts.",
+    radar:"Found on Code415 Radar", src:"Sources", cats:"categories"
+  },
+  ja: {
+    demos:"デモ", h1a:"AIっぽさ", h1b:"チェッカー",
+    sub:"投稿、メール、作文を貼るだけ。チャットボットがよく使う言い回し、定型句、記号の癖、構文の癖が光ります。日本語と英語に対応。",
+    b1:"ブラウザ内で動作、送信なし", b3:"無料・オープンソース", npat:"{n}種類の癖をチェック",
+    sBot:"英語のAI風サンプル", sPlain:"英語の普通の文", sJa:"日本語のAI風サンプル", fix:"簡単な所だけ直す", undo:"元に戻す", copy:"コピー", clear:"消す", ph:"ここに文章を貼ってください。投稿、メール、作文など。日本語でも英語でも。",
+    found:"見つかった癖", none:"まだ何もありません。文章を貼るか、サンプルを試してください。", clean:"癖は見つかりませんでした。",
+    perEn:"1,000語あたり", perJa:"2,000字あたり",
+    words:"{n}語", chars:"{n}字", hits:"{n}件", short:"短い文は100語として計算", shortJa:"短い文は200字として計算",
+    band_plain:"15未満。人が書いた文章に見えます。", band_some:"少し癖があります。投稿前に一度見直すと安心です。", band_many:"癖が多めです。AIの文章を見慣れた人は気づきます。", band_bot:"チャット画面からそのまま貼ったように見えます。",
+    tryi:"言い換え例：", fixed:"{n}か所を置き換えました。構文の癖はそのまま残しています。", nofix:"簡単に置き換えられる所はありません。残りは手で直してください。", copied:"コピーしました",
+    k1:"元になったニュース", d_h:"AIの癖を抜いた2.5 GBのモデル",
+    d_p:"10月19日、Erik Markus Kannike さんが qwen3-4b-deslop を公開しました。Qwen3-4B に小さな LoRA を M2 MacBook Air で1〜3時間学習させ、4つのニューロンの符号を反転しただけで、チャットボット特有の書き癖がほとんど消えました。評価は学習に使っていない40問の回答を、本人の癖パターン表で数えたものです。",
+    c1:"1,000語あたりの癖スコア", c2:"1,000語あたりのダッシュ数", lower:"低いほど良い",
+    f1:"クイズは<b>30問中30問</b>正解のまま", f2:"学習データは選び抜いた<b>161</b>回答", f3:"<b>rank 16</b>のLoRAと<b>175バイト</b>のニューロン編集", f4:"<b>2.5 GB</b>、Ollamaで動く",
+    d_note:"本人のパターン表は公開されていないので、本人のスコアとこのページのスコアは同じ尺度ではありません。考え方は同じで、表はこちらで作ったものです。数値は本人の記事より。",
+    k2:"仕組み", h_h:"癖のリストに重みをつけて数えるだけ",
+    how:["チャットボットの文章に普通の文章よりずっと多く出てくる癖を、英語{en}種類、日本語{ja}種類探します。","癖ごとに重みがあります。記号や構文の癖、チャットボットの名残は重く、単語ひとつは軽く数えます。","スコアは英語なら1,000語、日本語なら2,000字あたりの重みの合計です。15未満ならだいたい人間らしい文章です。","簡単な所だけ直すは、素直な言い換えがある語の置き換えと、決まり文句の削除だけを行います。文は書き換えないので、投稿前に必ず読み直してください。","すべてこのページの中で動きます。文章はどこにも送信・保存されません。"],
+    w_h:"癖があってもAIの証拠ではありません", w_p:"作文、ビジネスメール、翻訳文などでは、人もこう書きます。文章のうまい人がわざとダッシュを使うこともあります。誰かをAI使用だと責めるためには使わないでください。自分の下書きの見直しに使ってください。",
+    radar:"Code415 Radar で見つけたニュース", src:"出典", cats:"分類"
+  }
+};
+var SAMPLES = {
+  bot: "Certainly! Here's a quick overview.\n\nIn today's fast-paced world, staying productive isn't just about working harder — it's about working smarter. Let's delve into three habits that can transform your workflow.\n\n🚀 **Start small.** Tiny wins build momentum, foster confidence, and create lasting change.\n✨ **Protect your focus.** It's important to note that multitasking plays a crucial role in burnout.\n💡 **Review weekly.** The result? A seamless, intentional, and transformative routine.\n\nWhether you're a busy founder or a curious student, these strategies can unlock your full potential. Ultimately, productivity is a journey, not a destination.\n\nI hope this helps!",
+  plain: "I tried working in 25 minute blocks for a week. The first two days were rough. I kept checking my phone between blocks and lost the thread every time.\n\nBy Wednesday I put the phone in another room and it got easier. I finished the report a day early, which never happens.\n\nNot sure it works for meetings. For writing it helped, and I'm keeping it for now.",
+  ja: "もちろんです！以下に、生産性を高めるためのポイントをまとめました。\n\n現代社会において、効率よく働くことはますます重要になっています。単に長く働くだけでなく、賢く働くことが鍵となります。\n\n✅ **小さく始める**：小さな成功体験が、自信とモチベーションを高めます。\n✅ **集中を守る**：マルチタスクを避けることが大切です。\n✅ **毎週振り返る**：習慣化することで、さまざまなメリットが得られるでしょう。\n\nいかがでしたか？ぜひ今日から取り入れてみてください。お役に立てれば幸いです。"
+};
+
+var lang = Q.get("lang") || ((navigator.language || "en").toLowerCase().indexOf("ja") === 0 ? "ja" : "en");
+if (lang !== "ja") lang = "en";
+function t(k){ return (T[lang][k] !== undefined ? T[lang][k] : T.en[k]); }
+function fmt(s, o){ return String(s).replace(/\{(\w+)\}/g, function(m,k){ return o[k] !== undefined ? o[k] : m; }); }
+function esc(s){ return s.replace(/[&<>"]/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+var $ = function(id){ return document.getElementById(id); };
+var ta = $("ta"), back = $("back"), list = $("list"), cats = $("cats");
+var nEn = S.PATTERNS.filter(function(p){return p.lang==="en";}).length, nJa = S.PATTERNS.filter(function(p){return p.lang==="ja";}).length;
+
+function applyLang(){
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach(function(el){ var v = t(el.getAttribute("data-t")); if (typeof v === "string") el.innerHTML = v; });
+  ta.placeholder = t("ph");
+  $("npat").textContent = fmt(t("npat"), {n: nEn + nJa});
+  $("howlist").innerHTML = t("how").map(function(s){ return "<li>" + fmt(s, {en:nEn, ja:nJa}) + "</li>"; }).join("");
+  document.querySelectorAll(".langs button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-l") === lang); });
+  $("legend").innerHTML = Object.keys(S.CATS).map(function(k){ return '<span style="--c:'+S.CATS[k].color+'">'+S.CATS[k][lang]+'</span>'; }).join("");
+  document.title = lang === "ja" ? "AIっぽさチェッカー · 文章のAIっぽい癖を見つける · Code415" : "Slop Check · find the AI habits in your writing · Code415";
+  $("src").innerHTML = "<b>" + t("src") + "</b> · " + SOURCES.map(function(s){ return '<a href="'+s[1]+'" rel="noopener">'+s[0]+'</a>'; }).join(" · ");
+  render(true);
+}
+var SOURCES = [
+  ["Kannike, qwen3-4b-deslop write up", "https://100toolkit.com/blog/deslop-model/"],
+  ["Kobak et al. 2024, excess vocabulary in PubMed", "https://arxiv.org/abs/2406.07016"],
+  ["Wikipedia, Signs of AI writing", "https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing"],
+  ["Sam Paech, antislop sampler", "https://github.com/sam-paech/antislop-sampler"]
+,
+  ["textlint-rule-preset-ai-writing", "https://github.com/textlint-ja/textlint-rule-preset-ai-writing"],
+  ["stop-ai-slop-jp", "https://github.com/iKora128/stop-ai-slop-jp"],
+  ["ja-writing-guard", "https://github.com/TakeshiTGAL/hermes-plugin-ja-writing-guard"],
+  ["逆瀬川ちゃん, Qiitaの7万記事を数えてみた話", "https://nyosegawa.com/posts/qiita-writing-before-after-ai/"],
+  ["Fyve, AIっぽい文章の特徴は本当か", "https://fyve.co.jp/ai-advisor/articles/ai-text-detection-myths-japan"],
+  ["GMO天秤AI, AIくささを消す", "https://tenbin.ai/media/ai_tips/ai-writing-remove-ai-slop"]
+];
+
+/* ---------- clock and animation ---------- */
+var now = 0, anims = [];
+function anim(dur, fn, done){ var a = {t0: now, dur: dur, fn: fn, done: done}; anims.push(a); fn(0); return a; }
+function step(dt){
+  now += dt;
+  var cur = anims; anims = [];
+  cur.forEach(function(a){ var p = Math.min(1, (now - a.t0) / a.dur); a.fn(p); if (p < 1) anims.push(a); else if (a.done) a.done(); });
+  tweenScore(dt);
+  if (REC) recEffects(dt);
+}
+function recEffects(dt){
+  back.querySelectorAll("mark").forEach(function(m){
+    var v = 0, b = +m.getAttribute("data-born"), f = +m.getAttribute("data-fl");
+    if (b && now - b < 600) v = Math.max(v, 1 - (now - b) / 600);
+    if (f && now - f < 2200) v = Math.max(v, Math.pow(Math.sin(Math.PI * (now - f) / 550), 2));
+    m.style.setProperty("--pop", v.toFixed(3));
+  });
+  cats.querySelectorAll(".bar i").forEach(function(i){
+    var tw = +i.getAttribute("data-w") || 0, cw = +i.getAttribute("data-cw") || 0;
+    cw += (tw - cw) * Math.min(1, dt / 140); i.setAttribute("data-cw", cw); i.style.width = cw.toFixed(2) + "%";
+  });
+}
+var last = performance.now();
+function loop(ts){ var dt = Math.min(100, ts - last); last = ts; if (!REC || Q.get("live") === "1") step(dt); requestAnimationFrame(loop); }
+requestAnimationFrame(loop);
+var ease = function(p){ return 1 - Math.pow(1 - p, 3); };
+
+/* ---------- score display ---------- */
+var shown = 0, target = 0;
+function bandColor(s){ return s < 15 ? "#4dffa6" : s < 40 ? "#ffd23e" : s < 80 ? "#ff8a3d" : "#ff4f7a"; }
+function tweenScore(dt){
+  var d = target - shown;
+  if (Math.abs(d) < 0.05) shown = target; else shown += d * Math.min(1, dt / 160);
+  var s = shown, col = bandColor(s);
+  $("score").textContent = s >= 100 ? Math.round(s) : (Math.round(s * 10) / 10).toFixed(Math.abs(s - Math.round(s)) < 0.05 ? 0 : 1);
+  $("score").style.color = col;
+  var arc = $("arc"); arc.style.stroke = col; arc.style.color = col;
+  arc.setAttribute("stroke-dashoffset", (326.7 * (1 - Math.min(1, s / 120))).toFixed(1));
+  $("mk").style.left = "calc(" + Math.min(100, s < 15 ? s / 15 * 25 : s < 40 ? 25 + (s - 15) / 25 * 25 : s < 80 ? 50 + (s - 40) / 40 * 25 : 75 + Math.min(1, (s - 80) / 40) * 25) + "% - 2px)";
+}
+
+/* ---------- render ---------- */
+var res = null, prevKeys = {};
+function render(noPop){
+  var text = ta.value;
+  res = S.analyze(text);
+  var html = "", i = 0, keys = {};
+  function mk(h, inner){
+    var k = h.id + ":" + h.s + ":" + text.slice(h.s, h.e);
+    var isNew = !noPop && !prevKeys[k];
+    var cls = "c-" + h.cat + (isNew ? " pop" : "");
+    keys[k] = 1;
+    var born = isNew ? now : (prevKeys[k] || 0);
+    keys[k] = born || 1;
+    return '<mark class="' + cls + '" data-id="' + h.id + '" data-born="' + born + '">' + inner + "</mark>";
+  }
+  var top = res.hits.filter(function(h){ return !h.inner; });
+  var inn = res.hits.filter(function(h){ return h.inner; });
+  top.forEach(function(h){
+    html += esc(text.slice(i, h.s));
+    var j = h.s, body = "";
+    inn.forEach(function(d){ if (d.s >= h.s && d.e <= h.e) { body += esc(text.slice(j, d.s)) + mk(d, esc(text.slice(d.s, d.e))); j = d.e; } });
+    body += esc(text.slice(j, h.e));
+    html += mk(h, body);
+    i = h.e;
+  });
+  html += esc(text.slice(i)) + "\n";
+  back.innerHTML = html;
+  prevKeys = keys;
+  back.scrollTop = ta.scrollTop;
+  target = text.trim() ? res.score : 0;
+  var b = res.band || S.BANDS[0];
+  var bk = text.trim() ? b.key : "plain";
+  $("band").textContent = text.trim() ? b[lang] : "·";
+  $("band").style.color = text.trim() ? bandColor(res.score) : "var(--ink3)";
+  $("bandtxt").textContent = text.trim() ? t("band_" + bk) : t("none");
+  $("perlab").textContent = res.lang === "ja" ? t("perJa") : t("perEn");
+  var unit = res.lang === "ja" ? fmt(t("chars"), {n: res.units.toLocaleString()}) : fmt(t("words"), {n: res.units.toLocaleString()});
+  var shortNote = text.trim() && ((res.lang === "ja" && res.units < 200) || (res.lang !== "ja" && res.units < 100)) ? " · " + (res.lang === "ja" ? t("shortJa") : t("short")) : "";
+  $("count").textContent = text.trim() ? unit + " · " + fmt(t("hits"), {n: res.hits.length}) + shortNote : "";
+  var prevBars = {}; cats.querySelectorAll(".bar i").forEach(function(i){ prevBars[i.getAttribute("data-k")] = +i.getAttribute("data-cw") || 0; });
+  var tot = 0; Object.keys(res.byCat).forEach(function(k){ tot = Math.max(tot, res.byCat[k].w); });
+  cats.innerHTML = Object.keys(S.CATS).map(function(k){
+    var c = res.byCat[k] || {n:0, w:0};
+    var w = (tot ? c.w / tot * 100 : 0).toFixed(1), cw = prevBars[k] !== undefined ? prevBars[k] : 0;
+    return '<div class="cat" style="--c:'+S.CATS[k].color+'"><span>'+S.CATS[k][lang]+'</span><span class="bar"><i data-k="'+k+'" data-w="'+w+'" data-cw="'+cw+'" style="width:'+(REC ? cw : w)+'%"></i></span><span class="n">'+c.n+'</span></div>';
+  }).join("");
+  if (!text.trim()) list.innerHTML = '<li class="empty">' + t("none") + "</li>";
+  else if (!res.byPattern.length) list.innerHTML = '<li class="empty">' + t("clean") + "</li>";
+  else list.innerHTML = res.byPattern.map(function(b){
+    var lab = b.id.indexOf("w_") === 0 ? "“" + b.examples[0] + "”" : b.label;
+    return '<li data-id="'+b.id+'" style="--c:'+S.CATS[b.cat].color+'"><div class="h"><i></i><span>'+esc(lab)+'</span><em>×'+b.n+'</em></div><div class="why">'+esc(b.why)+'</div>'+(b.fix ? '<div class="fx">'+esc(b.fix.replace(/^Try: /, t("tryi")))+'</div>' : "")+"</li>";
+  }).join("");
+}
+ta.addEventListener("input", function(){ render(false); $("undoBtn").disabled = !undoText; });
+ta.addEventListener("scroll", function(){ back.scrollTop = ta.scrollTop; });
+list.addEventListener("click", function(e){
+  var li = e.target.closest("li[data-id]"); if (!li) return;
+  flash(li.getAttribute("data-id"));
+});
+function flash(id){
+  var ms = back.querySelectorAll('mark[data-id="' + id + '"]');
+  ms.forEach(function(m){ m.classList.remove("flash"); void m.offsetWidth; m.classList.add("flash"); m.setAttribute("data-fl", now || 1); });
+  if (ms[0] && !REC) { var y = ms[0].offsetTop - 60; ta.scrollTop = Math.max(0, y); back.scrollTop = ta.scrollTop; }
+}
+
+var toastTimer = null;
+function toast(msg, ms){
+  var el = $("toast"); el.textContent = msg; el.classList.add("on");
+  if (REC) { var D = ms || 2600; anim(D, function(p){ var o = p < .1 ? p / .1 : p > .88 ? (1 - p) / .12 : 1; el.style.opacity = o; el.style.transform = "translate(-50%," + ((1 - Math.min(1, p / .1)) * 10) + "px)"; }); return; }
+  if (toastTimer) toastTimer.dead = true;
+  var tok = {}; toastTimer = tok;
+  anim(ms || 2600, function(){}, function(){ if (!tok.dead) el.classList.remove("on"); });
+}
+
+/* ---------- actions ---------- */
+var undoText = "";
+function setText(s){ ta.value = s; ta.scrollTop = 0; render(false); }
+function typeIn(s, dur, done){
+  undoText = ""; $("undoBtn").disabled = true;
+  var lastN = -1;
+  anim(dur, function(p){
+    var n = Math.round(s.length * p);
+    if (n === lastN) return; lastN = n;
+    // reveal by whole words so highlights do not flicker mid word
+    var cut = n >= s.length ? s.length : s.slice(0, n).search(/\S*$/);
+    if (cut <= 0 && n < s.length) cut = 0;
+    ta.value = s.slice(0, n >= s.length ? s.length : cut);
+    ta.scrollTop = ta.scrollHeight; render(false);
+  }, function(){ ta.value = s; render(false); ta.scrollTop = 0; back.scrollTop = 0; if (done) done(); });
+}
+function doFix(){
+  var before = ta.value; if (!before.trim()) return;
+  var r = S.fix(before);
+  if (!r.changes || r.text === before) { toast(t("nofix")); return; }
+  back.querySelectorAll("mark").forEach(function(m){ m.classList.add("flash"); m.setAttribute("data-fl", now || 1); });
+  anim(700, function(){}, function(){
+    undoText = before; $("undoBtn").disabled = false;
+    ta.value = r.text; render(false);
+    toast(fmt(t("fixed"), {n: r.changes}), 3200);
+  });
+}
+$("fixBtn").onclick = doFix;
+$("undoBtn").onclick = function(){ if (undoText) { ta.value = undoText; undoText = ""; this.disabled = true; render(false); } };
+$("sBot").onclick = function(){ typeIn(SAMPLES.bot, 1600); };
+$("sPlain").onclick = function(){ typeIn(SAMPLES.plain, 1200); };
+$("sJa").onclick = function(){ typeIn(SAMPLES.ja, 1600); };
+$("clearBtn").onclick = function(){ undoText = ""; $("undoBtn").disabled = true; setText(""); ta.focus(); };
+$("copyBtn").onclick = function(){
+  var done = function(){ toast(t("copied"), 1400); };
+  if (navigator.clipboard) navigator.clipboard.writeText(ta.value).then(done, function(){ ta.select(); document.execCommand("copy"); done(); });
+  else { ta.select(); document.execCommand("copy"); done(); }
+};
+document.querySelectorAll(".langs button").forEach(function(b){ b.onclick = function(){ lang = b.getAttribute("data-l"); applyLang(); }; });
+
+/* deslop chart, animates when it scrolls into view */
+var chartDone = false;
+function runChart(){
+  if (chartDone) return; chartDone = true;
+  if (REC) { var bars = document.querySelectorAll("#chart i[data-w]"); anim(1400, function(pp){ var e = ease(pp); bars.forEach(function(i){ var max = +(i.getAttribute("data-max") || 125); var w = Math.max(0.6, +i.getAttribute("data-w") / max * 100); i.style.width = (w * e) + "%"; }); }); return; }
+  document.querySelectorAll("#chart i[data-w]").forEach(function(i){ var max = +(i.getAttribute("data-max") || 125); i.style.width = (Math.max(0.6, +i.getAttribute("data-w") / max * 100)) + "%"; if (+i.getAttribute("data-w") === 0) i.style.width = "0.6%"; });
+}
+if ("IntersectionObserver" in window && !REC) new IntersectionObserver(function(es){ es.forEach(function(e){ if (e.isIntersecting) runChart(); }); }, {threshold: .3}).observe($("chart"));
+else if (!REC) runChart();
+
+applyLang();
+var start = Q.get("text");
+if (start) setText(start);
+
+/* ---------- recorder hooks ---------- */
+var recFrame = null;
+if (REC) {
+  window.SAMPLE_BOT = SAMPLES.bot; window.SAMPLE_JA = SAMPLES.ja;
+  window.__sc = {
+    tick: function(dt){ step(dt); },
+    typeIn: function(s, d){ typeIn(s, d); }, fix: doFix, setText: setText, flash: flash,
+    setLang: function(l){ lang = l; applyLang(); },
+    chart: runChart,
+    cap: function(s){ var c = $("cap"); var from = +c.style.opacity || 0; if (s) c.textContent = s; var to = s ? 1 : 0; anim(300, function(p){ c.style.opacity = from + (to - from) * p; }); },
+    scrollToSel: function(sel, off, ms){ var el = document.querySelector(sel); window.__sc.scrollTo(el.getBoundingClientRect().top + window.scrollY + (off || 0), ms); },
+    scrollTo: function(y, ms){ var y0 = window.scrollY; anim(ms || 700, function(p){ var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; window.scrollTo(0, y0 + (y - y0) * e); }); },
+    press: function(id){ var b = $(id); anim(260, function(p){ b.style.transform = "scale(" + (1 - .06 * Math.sin(Math.PI * p)) + ")"; b.style.filter = "brightness(" + (1 + .5 * Math.sin(Math.PI * p)) + ")"; }); },
+    y: function(sel){ var el = document.querySelector(sel); return el.getBoundingClientRect().top + window.scrollY; },
+    samples: SAMPLES,
+    state: function(){ return {score: res && res.score, shown: shown, hits: res && res.hits.length, lang: res && res.lang}; }
+  };
+}
+})();
+</script>
+</body>
+</html>
